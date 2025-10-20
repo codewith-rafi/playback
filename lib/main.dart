@@ -5,44 +5,37 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
-
-// Gage Swenson @Decryptic
 
 void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  static const _title = 'Reverse Audio Player';
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: _title,
+      title: '🎵 Reverse Sing',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
+          seedColor: Colors.pinkAccent,
           brightness: Brightness.light,
         ),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: _title),
+      home: const MyHomePage(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
+  const MyHomePage({super.key});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   final _audioRecorder = AudioRecorder();
   final _audioPlayer = ap.AudioPlayer();
   bool _recording = false;
@@ -54,10 +47,16 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _playingOriginal = false;
   double _playbackProgress = 0.0;
   late final StreamSubscription _stream;
+  late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
     _stream = _audioPlayer.onPlayerStateChanged.listen((it) {
       switch (it) {
         case ap.PlayerState.completed:
@@ -65,6 +64,7 @@ class _MyHomePageState extends State<MyHomePage> {
           setState(() {
             _playingReverse = false;
             _playingOriginal = false;
+            _playbackProgress = 0.0;
           });
           break;
         default:
@@ -79,6 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _audioRecorder.dispose();
     _audioPlayer.dispose();
     _stream.cancel();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -88,7 +89,10 @@ class _MyHomePageState extends State<MyHomePage> {
         _playingOriginal = true;
         _playbackProgress = 0.0;
       });
-      _audioPlayer.onPositionChanged.listen((duration) async {
+
+      final subscription = _audioPlayer.onPositionChanged.listen((
+        duration,
+      ) async {
         final total = await _audioPlayer.getDuration();
         if (total != null && total.inMilliseconds > 0) {
           setState(() {
@@ -96,9 +100,12 @@ class _MyHomePageState extends State<MyHomePage> {
           });
         }
       });
+
       await _audioPlayer.play(
         kIsWeb ? ap.UrlSource(_filePath!) : ap.DeviceFileSource(_filePath!),
       );
+
+      subscription.cancel();
       setState(() {
         _playingOriginal = false;
         _playbackProgress = 0.0;
@@ -112,7 +119,10 @@ class _MyHomePageState extends State<MyHomePage> {
         _playingReverse = true;
         _playbackProgress = 0.0;
       });
-      _audioPlayer.onPositionChanged.listen((duration) async {
+
+      final subscription = _audioPlayer.onPositionChanged.listen((
+        duration,
+      ) async {
         final total = await _audioPlayer.getDuration();
         if (total != null && total.inMilliseconds > 0) {
           setState(() {
@@ -120,30 +130,19 @@ class _MyHomePageState extends State<MyHomePage> {
           });
         }
       });
+
       await _audioPlayer.play(
         kIsWeb
             ? ap.UrlSource(_filePathReverse!)
             : ap.DeviceFileSource(_filePathReverse!),
       );
+
+      subscription.cancel();
       setState(() {
         _playingReverse = false;
         _playbackProgress = 0.0;
       });
     }
-  }
-
-  void _stopReverse() async {
-    await _audioPlayer.stop();
-    setState(() {
-      _playingReverse = false;
-    });
-  }
-
-  void _stopOriginal() async {
-    await _audioPlayer.stop();
-    setState(() {
-      _playingOriginal = false;
-    });
   }
 
   Future<void> _startRecording() async {
@@ -181,7 +180,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
     debugPrint('recorded audio to: $path');
 
-    // Generate reverse audio path
     List<String> parts = path.split('.');
     String reversePath = '';
     for (int i = 0; i < parts.length; i++) {
@@ -199,7 +197,6 @@ class _MyHomePageState extends State<MyHomePage> {
       _filePath = path;
     });
 
-    // Process with FFmpeg to reverse the audio
     FFmpegKit.execute('-i $path -af areverse $reversePath').then((
       session,
     ) async {
@@ -227,313 +224,339 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.pink.shade300, Colors.purple.shade300],
+            ),
+          ),
+        ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text('🎵', style: TextStyle(fontSize: 24)),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Reverse Sing',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
         centerTitle: true,
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.pink.shade50,
+              Colors.purple.shade50,
+              Colors.blue.shade50,
+              Colors.cyan.shade50,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 16.0,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildRecordingCard(),
+                _buildOriginalCard(),
+                _buildReverseCard(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecordingCard() {
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: _recording
+                  ? [
+                      Colors.red.shade100,
+                      Colors.pink.shade100,
+                      Colors.orange.shade50,
+                    ]
+                  : [
+                      Colors.blue.shade100,
+                      Colors.cyan.shade100,
+                      Colors.teal.shade50,
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: _recording
+                    ? Colors.red.withOpacity(
+                        0.25 + _pulseController.value * 0.15,
+                      )
+                    : Colors.blue.withOpacity(0.15),
+                blurRadius: 20 + (_recording ? _pulseController.value * 10 : 0),
+                offset: const Offset(0, 8),
+                spreadRadius: _recording ? _pulseController.value * 2 : 0,
+              ),
+              BoxShadow(
+                color: Colors.white.withOpacity(0.5),
+                blurRadius: 10,
+                offset: const Offset(-4, -4),
+              ),
+            ],
+          ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Recording Container
-              Container(
+              Row(
+                children: [
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (_recording)
+                        Container(
+                          width: 70 + _pulseController.value * 10,
+                          height: 70 + _pulseController.value * 10,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.red.withOpacity(0.1),
+                          ),
+                        ),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: _recording
+                                ? [Colors.red.shade400, Colors.pink.shade400]
+                                : [Colors.blue.shade400, Colors.cyan.shade400],
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: (_recording ? Colors.red : Colors.blue)
+                                  .withOpacity(0.4),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          _recording ? Icons.mic : Icons.mic_none_rounded,
+                          size: 36,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text('🎤 ', style: TextStyle(fontSize: 20)),
+                            Text(
+                              _recording ? 'Recording...' : 'Ready to Record',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: _recording
+                                    ? Colors.red.shade700
+                                    : Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        _buildTimer(small: true),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
                 width: double.infinity,
-                height: 150,
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: _recording ? Colors.red.shade50 : Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _recording
-                        ? Colors.red.shade300
-                        : Colors.blue.shade300,
-                    width: 1.5,
+                child: ElevatedButton(
+                  onPressed: _playingOriginal || _playingReverse
+                      ? null
+                      : (_recording ? _stopRecording : _startRecording),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 18,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    elevation: 6,
+                    backgroundColor: _recording
+                        ? Colors.red.shade500
+                        : Colors.blue.shade500,
+                    foregroundColor: Colors.white,
+                    shadowColor: (_recording ? Colors.red : Colors.blue)
+                        .withOpacity(0.5),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _recording
+                            ? Icons.stop_circle_rounded
+                            : Icons.fiber_manual_record_rounded,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _recording ? 'STOP RECORDING' : 'START RECORDING',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                      child: Icon(
-                        _recording ? Icons.mic : Icons.mic_none,
-                        size: 38,
-                        color: _recording ? Colors.red : Colors.blue.shade700,
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'RECORDING',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: _recording
-                                  ? Colors.red
-                                  : Colors.blue.shade700,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          _buildTimer(small: true),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: ElevatedButton.icon(
-                        onPressed: _playingReverse
-                            ? null
-                            : (_recording ? _stopRecording : _startRecording),
-                        icon: Icon(
-                          _recording ? Icons.stop : Icons.fiber_manual_record,
-                          size: 18,
-                        ),
-                        label: Text(_recording ? 'STOP' : 'RECORD'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(80, 36),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                          textStyle: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          backgroundColor: _recording
-                              ? Colors.red
-                              : Colors.blue,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOriginalCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: _playingOriginal
+              ? [
+                  Colors.orange.shade100,
+                  Colors.amber.shade100,
+                  Colors.yellow.shade50,
+                ]
+              : [
+                  Colors.teal.shade100,
+                  Colors.cyan.shade100,
+                  Colors.lightBlue.shade50,
+                ],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: _playingOriginal
+                ? Colors.orange.withOpacity(0.2)
+                : Colors.teal.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.5),
+            blurRadius: 10,
+            offset: const Offset(-4, -4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: _playingOriginal
+                        ? [Colors.orange.shade400, Colors.amber.shade400]
+                        : [Colors.teal.shade400, Colors.cyan.shade400],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_playingOriginal ? Colors.orange : Colors.teal)
+                          .withOpacity(0.4),
+                      blurRadius: 12,
+                      spreadRadius: 2,
                     ),
                   ],
                 ),
-              ),
-              // Listen to Original Recording Container
-              Container(
-                width: double.infinity,
-                height: 150,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: _playingOriginal
-                      ? Colors.orange.shade50
-                      : Colors.teal.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _playingOriginal
-                        ? Colors.orange.shade300
-                        : Colors.teal.shade300,
-                    width: 1.5,
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                      child: Icon(
-                        _playingOriginal
-                            ? Icons.play_circle_filled
-                            : Icons.play_circle_outline,
-                        size: 38,
-                        color: _playingOriginal
-                            ? Colors.orange
-                            : Colors.teal.shade700,
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'LISTEN TO RECORDING',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: _playingOriginal
-                                  ? Colors.orange
-                                  : Colors.teal.shade700,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _filePath != null
-                                ? 'Ready to play'
-                                : 'Record audio first',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed:
-                                _recording ||
-                                    _filePath == null ||
-                                    _playingOriginal
-                                ? null
-                                : _playOriginal,
-                            icon: Icon(
-                              _playingOriginal ? Icons.stop : Icons.play_arrow,
-                              size: 18,
-                            ),
-                            label: Text(_playingOriginal ? 'STOP' : 'PLAY'),
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(80, 36),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                              textStyle: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              backgroundColor: _playingOriginal
-                                  ? Colors.orange
-                                  : Colors.teal,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                          if (_playingOriginal)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6.0),
-                              child: SizedBox(
-                                width: 80,
-                                child: LinearProgressIndicator(
-                                  value: _playbackProgress,
-                                  backgroundColor: Colors.teal.shade100,
-                                  color: Colors.orange,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
+                child: Icon(
+                  _playingOriginal
+                      ? Icons.pause_circle_filled_rounded
+                      : Icons.headphones_rounded,
+                  size: 36,
+                  color: Colors.white,
                 ),
               ),
-              // Reverse Playback Container
-              Container(
-                width: double.infinity,
-                height: 150,
-                margin: const EdgeInsets.only(top: 8),
-                decoration: BoxDecoration(
-                  color: _playingReverse
-                      ? Colors.purple.shade50
-                      : Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _playingReverse
-                        ? Colors.purple.shade300
-                        : Colors.green.shade300,
-                    width: 1.5,
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                      child: Icon(
-                        _playingReverse
-                            ? Icons.play_circle_filled
-                            : Icons.play_circle_outline,
-                        size: 38,
-                        color: _playingReverse
-                            ? Colors.purple
-                            : Colors.green.shade700,
-                      ),
+                    Row(
+                      children: [
+                        const Text('🎧 ', style: TextStyle(fontSize: 20)),
+                        Text(
+                          'Original Audio',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: _playingOriginal
+                                ? Colors.orange.shade700
+                                : Colors.teal.shade700,
+                          ),
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'REVERSE PLAYBACK',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: _playingReverse
-                                  ? Colors.purple
-                                  : Colors.green.shade700,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _filePathReverse != null
-                                ? 'Ready to play'
-                                : 'Record audio first',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed:
-                                _recording ||
-                                    _filePathReverse == null ||
-                                    _playingReverse
-                                ? null
-                                : _playReverse,
-                            icon: Icon(
-                              _playingReverse ? Icons.stop : Icons.play_arrow,
-                              size: 18,
-                            ),
-                            label: Text(_playingReverse ? 'STOP' : 'PLAY'),
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(80, 36),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                              textStyle: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              backgroundColor: _playingReverse
-                                  ? Colors.purple
-                                  : Colors.green,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                          if (_playingReverse)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6.0),
-                              child: SizedBox(
-                                width: 80,
-                                child: LinearProgressIndicator(
-                                  value: _playbackProgress,
-                                  backgroundColor: Colors.green.shade100,
-                                  color: Colors.purple,
-                                ),
-                              ),
-                            ),
-                        ],
+                    const SizedBox(height: 6),
+                    Text(
+                      _filePath != null
+                          ? (_playingOriginal
+                                ? 'Now playing...'
+                                : 'Ready to play')
+                          : 'Record something first',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -541,7 +564,223 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ],
           ),
+          if (_playingOriginal) ...[
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: LinearProgressIndicator(
+                value: _playbackProgress,
+                backgroundColor: Colors.orange.shade200,
+                color: Colors.orange.shade500,
+                minHeight: 8,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _recording || _filePath == null || _playingOriginal
+                  ? null
+                  : _playOriginal,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 18,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                elevation: 6,
+                backgroundColor: _playingOriginal
+                    ? Colors.orange.shade500
+                    : Colors.teal.shade500,
+                foregroundColor: Colors.white,
+                shadowColor: (_playingOriginal ? Colors.orange : Colors.teal)
+                    .withOpacity(0.5),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.play_arrow_rounded, size: 28),
+                  SizedBox(width: 12),
+                  Text(
+                    'PLAY ORIGINAL',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReverseCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: _playingReverse
+              ? [
+                  Colors.purple.shade100,
+                  Colors.pink.shade100,
+                  Colors.purple.shade50,
+                ]
+              : [
+                  Colors.green.shade100,
+                  Colors.lime.shade100,
+                  Colors.lightGreen.shade50,
+                ],
         ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: _playingReverse
+                ? Colors.purple.withOpacity(0.2)
+                : Colors.green.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.5),
+            blurRadius: 10,
+            offset: const Offset(-4, -4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: _playingReverse
+                        ? [Colors.purple.shade400, Colors.pink.shade400]
+                        : [Colors.green.shade400, Colors.lime.shade400],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_playingReverse ? Colors.purple : Colors.green)
+                          .withOpacity(0.4),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _playingReverse
+                      ? Icons.pause_circle_filled_rounded
+                      : Icons.sync_rounded,
+                  size: 36,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text('🔄 ', style: TextStyle(fontSize: 20)),
+                        Text(
+                          'Reversed Audio',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: _playingReverse
+                                ? Colors.purple.shade700
+                                : Colors.green.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _filePathReverse != null
+                          ? (_playingReverse
+                                ? 'Now playing...'
+                                : 'Ready to play')
+                          : 'Record something first',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (_playingReverse) ...[
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: LinearProgressIndicator(
+                value: _playbackProgress,
+                backgroundColor: Colors.purple.shade200,
+                color: Colors.purple.shade500,
+                minHeight: 8,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed:
+                  _recording || _filePathReverse == null || _playingReverse
+                  ? null
+                  : _playReverse,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 18,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                elevation: 6,
+                backgroundColor: _playingReverse
+                    ? Colors.purple.shade500
+                    : Colors.green.shade500,
+                foregroundColor: Colors.white,
+                shadowColor: (_playingReverse ? Colors.purple : Colors.green)
+                    .withOpacity(0.5),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.play_arrow_rounded, size: 28),
+                  SizedBox(width: 12),
+                  Text(
+                    'PLAY REVERSED',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -562,7 +801,7 @@ class _MyHomePageState extends State<MyHomePage> {
       style: TextStyle(
         fontWeight: FontWeight.bold,
         fontSize: small ? 18 : 36,
-        color: _recording ? Colors.red : Colors.grey.shade600,
+        color: _recording ? Colors.red.shade700 : Colors.grey.shade600,
         fontFeatures: const [FontFeature.tabularFigures()],
       ),
     );
