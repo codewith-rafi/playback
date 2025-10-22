@@ -2,26 +2,24 @@ import 'package:flutter/material.dart';
 
 class RecordingCard extends StatelessWidget {
   final bool recording;
-  final int duration;
-  final Animation<double> pulseAnimation;
-  final VoidCallback? onStartRecording;
-  final VoidCallback? onStopRecording;
+  final String duration;
+  final AnimationController pulseController;
+  final VoidCallback onRecordPressed;
   final bool isDisabled;
 
   const RecordingCard({
     super.key,
     required this.recording,
     required this.duration,
-    required this.pulseAnimation,
-    required this.onStartRecording,
-    required this.onStopRecording,
+    required this.pulseController,
+    required this.onRecordPressed,
     this.isDisabled = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: pulseAnimation,
+      animation: pulseController,
       builder: (context, child) {
         return Container(
           width: double.infinity,
@@ -46,11 +44,13 @@ class RecordingCard extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: recording
-                    ? Colors.red.withOpacity(0.25 + pulseAnimation.value * 0.15)
+                    ? Colors.red.withOpacity(
+                        0.25 + pulseController.value * 0.15,
+                      )
                     : Colors.blue.withOpacity(0.15),
-                blurRadius: 20 + (recording ? pulseAnimation.value * 10 : 0),
+                blurRadius: 20 + (recording ? pulseController.value * 10 : 0),
                 offset: const Offset(0, 8),
-                spreadRadius: recording ? pulseAnimation.value * 2 : 0,
+                spreadRadius: recording ? pulseController.value * 2 : 0,
               ),
               BoxShadow(
                 color: Colors.white.withOpacity(0.5),
@@ -68,8 +68,8 @@ class RecordingCard extends StatelessWidget {
                     children: [
                       if (recording)
                         Container(
-                          width: 70 + pulseAnimation.value * 10,
-                          height: 70 + pulseAnimation.value * 10,
+                          width: 70 + pulseController.value * 10,
+                          height: 70 + pulseController.value * 10,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.red.withOpacity(0.1),
@@ -134,9 +134,7 @@ class RecordingCard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: isDisabled
-                      ? null
-                      : (recording ? onStopRecording : onStartRecording),
+                  onPressed: isDisabled ? null : onRecordPressed,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 32,
@@ -183,18 +181,8 @@ class RecordingCard extends StatelessWidget {
   }
 
   Widget _buildTimer() {
-    String formatNumber(int sec) {
-      String numberStr = sec.toString();
-      if (sec < 10) {
-        numberStr = '0$numberStr';
-      }
-      return numberStr;
-    }
-
-    final String minutes = formatNumber(duration ~/ 60);
-    final String seconds = formatNumber(duration % 60);
     return Text(
-      '$minutes:$seconds',
+      duration,
       style: TextStyle(
         fontWeight: FontWeight.bold,
         fontSize: 18,
