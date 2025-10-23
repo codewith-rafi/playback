@@ -37,17 +37,9 @@ class PlaybackCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: isPlaying
-                    ? color.withOpacity(0.25 + animationValue * 0.15)
-                    : color.withOpacity(0.15),
-                blurRadius: 20 + (isPlaying ? animationValue * 10 : 0),
-                offset: const Offset(0, 8),
-                spreadRadius: isPlaying ? animationValue * 2 : 0,
-              ),
-              BoxShadow(
-                color: Colors.white.withOpacity(0.5),
-                blurRadius: 10,
-                offset: const Offset(-4, -4),
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
             ],
           ),
@@ -64,7 +56,7 @@ class PlaybackCard extends StatelessWidget {
                           height: 70 + animationValue * 10,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: color.withOpacity(0.1),
+                            color: color.withValues(alpha: 0.1),
                           ),
                         ),
                       Container(
@@ -78,7 +70,7 @@ class PlaybackCard extends StatelessWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: color.withOpacity(0.4),
+                              color: color.withValues(alpha: 0.4),
                               blurRadius: 12,
                               spreadRadius: 2,
                             ),
@@ -139,7 +131,7 @@ class PlaybackCard extends StatelessWidget {
                     elevation: 6,
                     backgroundColor: color.shade500,
                     foregroundColor: Colors.white,
-                    shadowColor: color.withOpacity(0.5),
+                    shadowColor: color.withValues(alpha: 0.5),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,

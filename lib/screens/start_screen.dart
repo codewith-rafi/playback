@@ -7,33 +7,26 @@ class StartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.purple.shade400,
-              Colors.pink.shade400,
-              Colors.orange.shade300,
-            ],
-          ),
-        ),
+        decoration: BoxDecoration(color: const Color(0xFF596CAD)),
         child: SafeArea(
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Game Title
-                const Icon(
-                  Icons.music_note_rounded,
-                  size: 120,
-                  color: Colors.white,
+                // Logo
+                Image.asset(
+                  'assets/start.png',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
+
+                // Game Title
                 const Text(
                   'ReverSing',
                   style: TextStyle(
-                    fontSize: 48,
+                    fontSize: 64,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     shadows: [
@@ -47,14 +40,15 @@ class StartScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 15),
                 const Text(
-                  'The Ultimate Voice Challenge!',
+                  'Sing it backward!\nLaugh it forward!',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 20,
                     color: Colors.white70,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 80),
+                const SizedBox(height: 40),
 
                 // Start Button
                 _buildGameButton(
@@ -68,30 +62,14 @@ class StartScreen extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // Info Card
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 40),
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildInfoRow(
-                        Icons.people_alt_rounded,
-                        '2 Players take turns',
-                      ),
-                      const SizedBox(height: 12),
-                      _buildInfoRow(Icons.mic_rounded, 'Record your voice'),
-                      const SizedBox(height: 12),
-                      _buildInfoRow(
-                        Icons.replay_rounded,
-                        'Listen to it reversed!',
-                      ),
-                    ],
-                  ),
+                // Friendship Notes Button
+                _buildGameButton(
+                  context: context,
+                  label: 'FRIENDSHIP NOTES',
+                  icon: Icons.favorite_rounded,
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/memories');
+                  },
                 ),
               ],
             ),
@@ -110,15 +88,14 @@ class StartScreen extends StatelessWidget {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
+        width: 380,
         padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.white, Colors.white.withOpacity(0.9)],
-          ),
+          color: const Color(0xFF9384B6),
           borderRadius: BorderRadius.circular(35),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -126,38 +103,26 @@ class StartScreen extends StatelessWidget {
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.purple.shade600, size: 32),
+            Icon(
+              icon,
+              color: Colors.white,
+              size: icon == Icons.play_arrow_rounded ? 38 : 32,
+            ),
             const SizedBox(width: 15),
             Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.purple.shade600,
+                color: Colors.white,
                 letterSpacing: 1.2,
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.white, size: 24),
-        const SizedBox(width: 12),
-        Text(
-          text,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 }

@@ -43,19 +43,9 @@ class RecordingCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: recording
-                    ? Colors.red.withOpacity(
-                        0.25 + pulseController.value * 0.15,
-                      )
-                    : Colors.blue.withOpacity(0.15),
-                blurRadius: 20 + (recording ? pulseController.value * 10 : 0),
-                offset: const Offset(0, 8),
-                spreadRadius: recording ? pulseController.value * 2 : 0,
-              ),
-              BoxShadow(
-                color: Colors.white.withOpacity(0.5),
-                blurRadius: 10,
-                offset: const Offset(-4, -4),
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
             ],
           ),
@@ -72,7 +62,7 @@ class RecordingCard extends StatelessWidget {
                           height: 70 + pulseController.value * 10,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.red.withOpacity(0.1),
+                            color: Colors.red.withValues(alpha: 0.1),
                           ),
                         ),
                       Container(
@@ -89,7 +79,7 @@ class RecordingCard extends StatelessWidget {
                           boxShadow: [
                             BoxShadow(
                               color: (recording ? Colors.red : Colors.blue)
-                                  .withOpacity(0.4),
+                                  .withValues(alpha: 0.4),
                               blurRadius: 12,
                               spreadRadius: 2,
                             ),
@@ -149,7 +139,7 @@ class RecordingCard extends StatelessWidget {
                         : Colors.blue.shade500,
                     foregroundColor: Colors.white,
                     shadowColor: (recording ? Colors.red : Colors.blue)
-                        .withOpacity(0.5),
+                        .withValues(alpha: 0.5),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,

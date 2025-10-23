@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 import '../models/game_round.dart';
 
 class LeaderboardScreen extends StatefulWidget {
@@ -21,6 +23,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  bool _isSaved = false;
 
   @override
   void initState() {
@@ -54,15 +57,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
 
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.amber.shade300,
-              Colors.orange.shade300,
-              Colors.pink.shade300,
-            ],
+            colors: [Color(0xFF596CAD), Color(0xFF7B8AC8), Color(0xFF9384B6)],
           ),
         ),
         child: SafeArea(
@@ -85,7 +84,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                       },
                     ),
                     const Text(
-                      '🏆 LEADERBOARD',
+                      'LEADERBOARD',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 28,
@@ -106,10 +105,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                       // Trophy
                       ScaleTransition(
                         scale: _scaleAnimation,
-                        child: const Icon(
-                          Icons.emoji_events,
-                          size: 100,
-                          color: Colors.amber,
+                        child: const Text(
+                          '🏆',
+                          style: TextStyle(fontSize: 100),
                         ),
                       ),
 
@@ -179,20 +177,24 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.5),
-                            width: 2,
-                          ),
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               '📊 Round History',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: const Color(0xFF596CAD),
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -217,7 +219,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
-                            foregroundColor: Colors.orange.shade700,
+                            foregroundColor: const Color(0xFF596CAD),
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
@@ -235,6 +237,47 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Save to Friendship Notes Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _saveToFriendshipNotes,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            elevation: 8,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _isSaved
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                size: 28,
+                                color: Colors.black,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'SAVE',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                  color: Colors.black,
                                 ),
                               ),
                             ],
@@ -290,6 +333,70 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     );
   }
 
+  Future<void> _saveToFriendshipNotes() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final friendshipDir = Directory('${dir.path}/friendship_notes');
+
+      // Create friendship_notes directory if it doesn't exist
+      if (!await friendshipDir.exists()) {
+        await friendshipDir.create(recursive: true);
+      }
+
+      int savedCount = 0;
+
+      // Copy all audio files from rounds to friendship_notes folder
+      for (var round in widget.rounds) {
+        final filesToCopy = [
+          round.recorderOriginalPath,
+          round.recorderReversedPath,
+          round.imitatorRecordingPath,
+          round.imitatorReversedPath,
+        ];
+
+        for (var filePath in filesToCopy) {
+          if (filePath != null && filePath.isNotEmpty) {
+            final sourceFile = File(filePath);
+            if (await sourceFile.exists()) {
+              final fileName = filePath.split('/').last;
+              final destinationPath = '${friendshipDir.path}/$fileName';
+
+              // Only copy if file doesn't already exist
+              if (!await File(destinationPath).exists()) {
+                await sourceFile.copy(destinationPath);
+                savedCount++;
+              }
+            }
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _isSaved = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Saved $savedCount recording${savedCount != 1 ? 's' : ''} to Friendship Notes! 💝',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildScoreCard(
     String player,
     int score,
@@ -302,17 +409,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.white, Colors.white.withOpacity(0.95)],
+            colors: [Colors.white, Colors.white.withValues(alpha: 0.95)],
           ),
           borderRadius: BorderRadius.circular(20),
           border: isWinner ? Border.all(color: Colors.amber, width: 4) : null,
           boxShadow: [
             BoxShadow(
-              color: isWinner
-                  ? Colors.amber.withOpacity(0.5)
-                  : Colors.black.withOpacity(0.1),
-              blurRadius: isWinner ? 20 : 10,
-              spreadRadius: isWinner ? 3 : 0,
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 15,
               offset: const Offset(0, 5),
             ),
           ],
@@ -356,8 +460,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
+          color: const Color(0xFF596CAD).withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: const Color(0xFF596CAD).withValues(alpha: 0.3),
+            width: 1,
+          ),
         ),
         child: Row(
           children: [
@@ -365,9 +473,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: didMatch
-                    ? Colors.green.withOpacity(0.3)
-                    : Colors.red.withOpacity(0.3),
+                color: didMatch ? Colors.green.shade700 : Colors.red.shade700,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -389,7 +495,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                   Text(
                     '${round.recorderName} → ${round.imitatorName}',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF2E3D6B),
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -399,8 +505,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                     didMatch ? '✅ Match' : '❌ No Match',
                     style: TextStyle(
                       color: didMatch
-                          ? Colors.green.shade300
-                          : Colors.red.shade300,
+                          ? Colors.green.shade800
+                          : Colors.red.shade800,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -412,7 +518,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
               Text(
                 '+1',
                 style: TextStyle(
-                  color: Colors.green.shade300,
+                  color: Colors.green.shade800,
                   fontWeight: FontWeight.bold,
                   fontSize: 24,
                 ),

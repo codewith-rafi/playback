@@ -300,17 +300,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.purple.shade300,
-              Colors.pink.shade300,
-              Colors.orange.shade200,
-            ],
-          ),
-        ),
+        decoration: BoxDecoration(color: const Color(0xFF596CAD)),
         child: SafeArea(
           child: Column(
             children: [
@@ -341,10 +331,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.white.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(25),
               border: Border.all(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 width: 2,
               ),
             ),
@@ -476,7 +466,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           children: [
             Expanded(
               child: _buildMatchButton(
-                label: "✅ MATCH",
+                label: "💚 MATCH",
                 onPressed: () => _markMatch(true),
                 color: Colors.green,
               ),
@@ -484,7 +474,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             const SizedBox(width: 16),
             Expanded(
               child: _buildMatchButton(
-                label: "❌ NO MATCH",
+                label: "💔 NO MATCH",
                 onPressed: () => _markMatch(false),
                 color: Colors.red,
               ),
@@ -547,16 +537,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.3),
+        color: color.shade100,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.5), width: 3),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 3),
       ),
       child: Column(
         children: [
           Text(
             role,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: color.shade700,
               fontSize: 16,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
@@ -580,9 +570,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.white.withOpacity(0.5)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
       ),
       child: Text(
         message,
@@ -609,14 +599,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.white, Colors.white.withOpacity(0.9)],
+            colors: [Colors.white, Colors.white.withValues(alpha: 0.9)],
           ),
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
